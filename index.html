@@ -604,6 +604,10 @@ footer{border-top:.5px solid var(--smoke);padding:2rem 3rem;display:flex;align-i
 .next-avail-btn:hover{background:rgba(255,215,0,.1);box-shadow:0 0 16px rgba(255,215,0,.5),0 0 32px rgba(255,215,0,.2);animation:none}
 .next-avail-btn:disabled{opacity:.5;cursor:not-allowed;animation:none}
 @keyframes neonPulse{0%,100%{box-shadow:0 0 4px rgba(255,215,0,.4),0 0 8px rgba(255,215,0,.2);border-color:rgba(255,215,0,.7)}50%{box-shadow:0 0 12px rgba(255,215,0,.9),0 0 24px rgba(255,215,0,.5),0 0 40px rgba(255,215,0,.2);border-color:#FFD700}}
+
+.ref-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:.6rem}
+.ref-opt{padding:.6rem .4rem;background:#1a1a1a;border:.5px solid #2e2e2e;color:#888;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;text-align:center;cursor:pointer;border-radius:4px;transition:all .2s}
+.ref-opt.sel{background:rgba(245,245,245,.12);border-color:#aaa;color:#f5f5f5}
 </style>
 </head>
 <body>
@@ -1100,6 +1104,19 @@ footer{border-top:.5px solid var(--smoke);padding:2rem 3rem;display:flex;align-i
           </div>
         </div>
 
+        <span class="pb-lbl">How did you hear about us?</span>
+        <div class="ref-options">
+          <div class="ref-opt" onclick="selRef(this,'Google')">Google</div>
+          <div class="ref-opt" onclick="selRef(this,'Instagram')">Instagram</div>
+          <div class="ref-opt" onclick="selRef(this,'Facebook')">Facebook</div>
+          <div class="ref-opt" onclick="selRef(this,'Friend / Family')">Friend / Family</div>
+          <div class="ref-opt" onclick="selRef(this,'Returning Client')">Returning</div>
+          <div class="ref-opt" onclick="selRef(this,'Other')">Other</div>
+        </div>
+        <div id="ref-name-wrap" style="display:none;margin-bottom:.8rem">
+          <input class="pb-inp" id="ref-name" type="text" placeholder="Who referred you? (name)" style="width:100%">
+        </div>
+
         <span class="pb-lbl">Preferred Date</span>
         <button class="next-avail-btn" id="pb-next-avail" onclick="findNextAvailable('booking')">⚡ Find Next Available Slot</button>
         <div class="cal-wrap">
@@ -1195,6 +1212,18 @@ footer{border-top:.5px solid var(--smoke);padding:2rem 3rem;display:flex;align-i
             <label>Tell us about your car &amp; what's on your mind</label>
             <textarea class="cs-inp" id="cs-notes" rows="3" placeholder="e.g. scratches, paint issues, not sure what it needs..."></textarea>
           </div>
+        </div>
+        <span class="cs-lbl" style="margin-top:1rem">How did you hear about us?</span>
+        <div class="ref-options">
+          <div class="ref-opt" onclick="selRef(this,'Google')">Google</div>
+          <div class="ref-opt" onclick="selRef(this,'Instagram')">Instagram</div>
+          <div class="ref-opt" onclick="selRef(this,'Facebook')">Facebook</div>
+          <div class="ref-opt" onclick="selRef(this,'Friend / Family')">Friend / Family</div>
+          <div class="ref-opt" onclick="selRef(this,'Returning Client')">Returning</div>
+          <div class="ref-opt" onclick="selRef(this,'Other')">Other</div>
+        </div>
+        <div id="cs-ref-name-wrap" style="display:none;margin-bottom:.8rem">
+          <input class="cs-inp" id="cs-ref-name" type="text" placeholder="Who referred you? (name)" style="width:100%">
         </div>
         <div class="cs-err" id="cs-err1">Please enter your name, phone, and email.</div>
         <div class="cs-btn-row">
@@ -1712,7 +1741,7 @@ calInit();
 // ── MODAL OPEN / CLOSE ───────────────────────────────────────────────
 function openPrebook(pkg) {
   // Reset state
-  selPkg = ''; selBase = 0; selSz = ''; selAdd = 0; selDate = ''; selTime = '';
+  selPkg = ''; selBase = 0; selSz = ''; selAdd = 0; selDate = ''; selTime = ''; selRefSource = '';
   document.querySelectorAll('.pkg-pick,.sz-pick,.ts').forEach(b => b.classList.remove('sel'));
   document.getElementById('sum-box').classList.remove('show');
   document.getElementById('v-year').value  = '';
@@ -1780,6 +1809,7 @@ async function pbSubmit() {
     ? document.getElementById('v-model-txt').value.trim()
     : document.getElementById('v-model').value;
   const notes = document.getElementById('c-notes').value.trim();
+  const refSource = getRefString('ref-name');
   const veh   = [year, make, model].filter(Boolean).join(' ') || 'Not specified';
 
   const [y,m,d] = selDate.split('-');
@@ -1800,7 +1830,7 @@ async function pbSubmit() {
       phone:   phone,
       email:   email || '',
       vehicle: veh,
-      notes:   (notes ? notes + ' | ' : '') + 'Website booking request — ' + prettyDate + ' at ' + selTime
+      notes:   (notes ? notes + ' | ' : '') + 'Website booking request — ' + prettyDate + ' at ' + selTime + (refSource ? ' | Source: ' + refSource : '')
     });
 
     // Convert time string "10:00 AM" → "10:00" for Supabase
@@ -1870,6 +1900,33 @@ async function pbSubmit() {
   setTimeout(() => { window.location.href = stripeUrl; }, 2000);
   btn.disabled = false;
   btn.textContent = 'Send Booking Request →';
+}
+
+
+// ── REFERRAL TRACKING ─────────────────────────────────────────────────
+var selRefSource = '';
+function selRef(el, source) {
+  selRefSource = source;
+  // Deselect all in same group
+  el.closest('.ref-options').querySelectorAll('.ref-opt').forEach(function(o){ o.classList.remove('sel'); });
+  el.classList.add('sel');
+  // Show name field if Friend/Family
+  var nameWrap = el.closest('.cs-inner, .pb-modal') 
+    ? el.closest('.cs-inner') 
+      ? document.getElementById('cs-ref-name-wrap') 
+      : document.getElementById('ref-name-wrap')
+    : document.getElementById('ref-name-wrap');
+  if (nameWrap) nameWrap.style.display = (source === 'Friend / Family') ? 'block' : 'none';
+}
+
+function getRefString(nameInputId) {
+  if (!selRefSource) return '';
+  if (selRefSource === 'Friend / Family') {
+    var name = document.getElementById(nameInputId);
+    var refName = name ? name.value.trim() : '';
+    return refName ? 'Friend / Family — referred by ' + refName : 'Friend / Family';
+  }
+  return selRefSource;
 }
 
 // ── FAQ ACCORDION ──────────────────────────────────────────────────
@@ -2042,6 +2099,7 @@ async function csSubmit() {
   var phone = document.getElementById('cs-phone').value.trim();
   var email = document.getElementById('cs-email').value.trim();
   var notes = document.getElementById('cs-notes').value.trim();
+  var csRefSource = getRefString('cs-ref-name');
   var csYear  = document.getElementById('cs-year').value;
   var csMakeV = document.getElementById('cs-make').value;
   var csMake  = csMakeV === '__other' ? 'Other' : csMakeV;
@@ -2063,7 +2121,7 @@ async function csSubmit() {
     var hr = parseInt(tp[1]); var ap = tp[3].toUpperCase();
     if(ap==='PM'&&hr!==12) hr+=12; if(ap==='AM'&&hr===12) hr=0;
     var time24 = String(hr).padStart(2,'0')+':'+tp[2];
-    var cRow = await sbPost('clients',{name:name,phone:phone,email:email,vehicle:csVeh,notes:'Consult request'+(notes?' — '+notes:'')});
+    var cRow = await sbPost('clients',{name:name,phone:phone,email:email,vehicle:csVeh,notes:'Consult request'+(notes?' — '+notes:'')+(csRefSource?' | Source: '+csRefSource:'')});
     await sbPost('jobs',{client_id:cRow.id,service:'Complimentary Consult',price:0,status:'Booked',date:csSelDate,appointment_time:time24,notes:'Website consult request'+(notes?' — '+notes:''),vehicle_year:csYear?parseInt(csYear):null,vehicle_make:csMake||null,vehicle_model:csModel||null});
     // Create Google Calendar event
     fetch('https://m2-luxuries.mali-a7f.workers.dev', {
