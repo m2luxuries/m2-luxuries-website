@@ -1847,10 +1847,10 @@ async function pbSubmit() {
       client_id:        clientRow.id,
       service:          selPkg,
       price:            selBase + selAdd,
-      status:           'Quoted',
+      status:           'Booked',
       date:             selDate,
       appointment_time: time24,
-      notes:            '⏳ PENDING PAYMENT — Website booking | Vehicle Size: ' + selSz + (notes ? ' | Notes: ' + notes : ''),
+      notes:            '⏳ DEPOSIT PENDING — ' + prettyDate + ' at ' + selTime + (notes ? ' | ' + notes : ''),
       vehicle_year:     year  ? parseInt(year) : null,
       vehicle_make:     make  || null,
       vehicle_model:    model || null
